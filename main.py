@@ -5,6 +5,7 @@ import json
 def save(user_field_, field_, bombs_, x_field_, y_field_):
     """
     Сохранение незаконченной игры (сохраняется в json файл)
+    Также реализуется шифрование данных кодовым словом
     """
     save_data = {
         "user_field": user_field_,
@@ -13,16 +14,30 @@ def save(user_field_, field_, bombs_, x_field_, y_field_):
         "x_field": x_field_,
         "y_field": y_field_
     }
+    s = json.dumps(save_data)
+    ss = ''
+    for i in range(len(s)):
+        ss += chr(ord(s[i]) - 1)
+    save_string = {
+        0: ss
+    }
     with open("save.json", "w") as file:
-        json.dump(save_data, file)
+        json.dump(save_string, file)
 
 
 def load():
     """
     Загрузка ранее сохранённой игры (загрузка из json файла)
+    И расшифровка
     """
+    load_string = ['']
     with open("save.json", "r") as file:
-        load_data = json.load(file)
+        load_string[0] = json.loads(file.readline())
+    s = load_string[0]['0']
+    ss = ''
+    for i in range(len(s)):
+        ss += chr(ord(s[i]) + 1)
+    load_data = json.loads(ss)
     user_field_ = load_data["user_field"]
     field_ = load_data["field"]
     bombs_ = load_data["bombs"]
