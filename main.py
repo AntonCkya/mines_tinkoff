@@ -5,7 +5,7 @@ import json
 def save(user_field_, field_, bombs_, x_field_, y_field_):
     """
     Сохранение незаконченной игры (сохраняется в json файл)
-    Также реализуется шифрование данных кодовым словом
+    Также реализуется шифрование сдвигом всех символов по их коду
     """
     save_data = {
         "user_field": user_field_,
@@ -102,11 +102,21 @@ def print_field(x_field, y_field, field):
 
 
 def new_user_field_generating(x_field, y_field):
+    """
+    Функция генерирует поле x_field*y_field, заполненное символами □
+    Такое поле выводится пользователю
+    """
     user_field_ = [['□' for _ in range(x_field)] for __ in range(y_field)]
     return user_field_
 
 
 def open_field(x, y, user_field, field, x_field, y_field, p):
+    """
+    Функция "открывает" ячейки на поле пользователя
+    В координатах открытия открывается ячейка и реккурентно открываются остальные, пока не дойдёт до клеток с цифрами
+    включительно
+    В случае открытия бомбы, возвращает ['KABOOM', []] - маркер поражения
+    """
     if field[x][y] < 9:
         user_field[x][y] = field[x][y]
         if x + 1 < x_field:
@@ -123,7 +133,7 @@ def open_field(x, y, user_field, field, x_field, y_field, p):
                 user_field = open_field(x, y - 1, user_field, field, x_field, y_field, field[x][y - 1])
         return user_field
     else:
-        return ['KABOOM']
+        return ['KABOOM', []]
 
 """
 Начало программы
@@ -138,43 +148,69 @@ while True:
     y_field = 0
     bombs_count = 0
     bombs = 0
+    """
+    1: начало новой игры
+    2: загрузка игры
+    3: выход из игры (прекращение работы программы)
+    """
     if command == '3' or command == 'Выйти':
         print('Пока :(')
         break
     if command == '1' or command == 'Новая игра':
         print('Классический режим или Свои установки?\n1: Классический режим\n2: Свои установки')
         command = input()
+        """
+        Классический режим - работа программы по тз пункта а
+        Свои установки - работа программы по тз пункта б
+        тз пункта в не реализованно
+        """
         if command == '1' or command == 'Классический режим':
             field, bombs = new_field_generating(5, 5, 2, 5)
             x_field = 5
             y_field = 5
             user_field = new_user_field_generating(5, 5)
         elif command == '2' or command == 'Свои установки':
-            print('Введите размеры поля и число бомб 4 цифрами:')
+            print('Введите размеры поля:')
             command = list(map(int, input().split()))
             x_field = command[0]
             y_field = command[1]
-            field, bombs = new_field_generating(command[0], command[1], command[2], command[3])
-            user_field = new_user_field_generating(command[0], command[1])
+            print('Введите количество бомб: от скольки до скольки (если хотите видеть точное число бомб, введите 2'+
+                  'одинаковых числа)')
+            command = list(map(int, input().split()))
+            field, bombs = new_field_generating(x_field, y_field, command[0], command[1])
+            user_field = new_user_field_generating(x_field, y_field)
     if command == '2' or command == 'Загрузить':
         user_field, field, bombs, x_field, y_field = load()
     while True:
+        """
+        Игровой процесс
+        """
         print_field(x_field, y_field, user_field)
+        x, y, action = '', '', ''
         print("Всего бомб: ", len(bombs))
         print("Команды вида: ЧИСЛО ЧИСЛО КОМАНДА\nКоманды: Flag, Open")
-        x, y, action = map(str, input().split())    # [X,Y,Action]
-        x = int(x)
-        y = int(y)
-        if action == 'Save':
+        print("Save - схранить игру, Menu - выход в главное меню (игра не сохраняется!)")
+        command = input()    # [X,Y,Action]
+        if command == 'Save':
             save(user_field, field, bombs, x_field, y_field)
             print("Игра сохранена")
+            continue
+        elif command == 'Menu':
+            break
+        else:
+            x, y, action = map(str, command.split())
+        x = int(x)
+        y = int(y)
         if action == 'Flag':
+            """
+            Игра оканчивается победой только в случае, если все бомбы были отмечены
+            """
             user_field[x - 1][y - 1] = '⚑'
             if field[x - 1][y - 1] == 9:
                 bombs_count += 1
         if action == 'Open':
-            user_field = open_field(x - 1, y - 1, user_field, field, x_field, y_field, field[x][y])
-            if user_field == ['KABOOM']:
+            user_field = open_field(x - 1, y - 1, user_field, field, x_field, y_field, field[x - 1][y - 1])
+            if user_field == ['KABOOM', []]:
                 print('Вы проиграли, игра окончена')
                 break
         if len(bombs) == bombs_count:
